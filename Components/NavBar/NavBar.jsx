@@ -11,7 +11,7 @@ import images from "../../assets";
 const NavBar = () => {
   const menuItems = [
     {
-      menu: "All Users",
+      menu: "",
       link: "alluser",
     },
     {
@@ -39,7 +39,7 @@ const NavBar = () => {
     <div className={Style.NavBar}>
       <div className={Style.NavBar_box}>
         <div className={Style.NavBar_box_left}>
-          <Image src={images.logo} alt="logo" width={50} height={50} />
+          <Image src={images.logo} alt="logo" width={50} height={50}/>
         </div>
         <div className={Style.NavBar_box_right}>
           {/* //DESKTOP */}
@@ -128,9 +128,9 @@ const NavBar = () => {
           <Model
             openBox={setOpenModel}
             title="WELCOME TO"
-            head="CHAT BUDDY"
-            info="Lorem ipsum dolor sit amet, consectetur adipisicing elit. Cupiditate maxime assumenda exercitationem voluptatibus, vero aliquid in tempore aut, impedit dolores voluptate recusandae nulla fuga? Praesentium iusto mollitia sint fugit! Placeat?"
-            smallInfo="Kindley seclet your name..."
+            head="DeTALK"
+            info="DeTalk is a decentralized application based on web3 which works on blockchain network to facilitate a decentralized chat with decentralized identity through MetaMask"
+            smallInfo=""
             image={images.hero}
             functionName={createAccount}
             address={account}
