@@ -1,44 +1,38 @@
-import React, { useEffect } from "react";
-import Image from "next/image";
+import React from "react";
 import Link from "next/link";
 
 //INTERNAL IMPORT
 import Style from "./Card.module.css";
-import images from "../../../assets";
 
-const Card = ({ readMessage, el, i, readUser }) => {
+const Card = ({ readMessage, el, i, readUser, active }) => {
+  const handleOpen = () => {
+    readMessage(el.pubkey);
+    readUser(el.pubkey);
+  };
+
   return (
-    <div onClick={() => (readMessage(el.pubkey), readUser(el.pubkey))}>
-      <Link
-        href={{
-          pathname: "/",
-          query: { name: `${el.name}`, address: `${el.pubkey}` },
-        }}
+    <Link
+      href={{
+        pathname: "/",
+        query: { name: `${el.name}`, address: `${el.pubkey}` },
+      }}
+    >
+      <a
+        className={`${Style.Card} ${active ? Style.active : ""}`}
+        onClick={handleOpen}
       >
-        <div className={Style.Card}>
-          <div className={Style.Card_box}>
-            <div className={Style.Card_box_left}>
-              <Image
-                src={images.accountName}
-                alt="username"
-                width={50}
-                height={50}
-                className={Style.Card_box_left_img}
-              />
-            </div>
-            <div className={Style.Card_box_right}>
-              <div className={Style.Card_box_right_middle}>
-                <h4>{el.name}</h4>
-                <small>{el.pubkey.slice(21)}..</small>
-              </div>
-              <div className={Style.Card_box_right_end}>
-                <small>{i + 1}</small>
-              </div>
-            </div>
-          </div>
+        <span className={Style.avatar}>
+          {(el.name || "?").charAt(0).toUpperCase()}
+        </span>
+        <div className={Style.meta}>
+          <h4 className={Style.name}>{el.name}</h4>
+          <small className={Style.addr}>
+            {el.pubkey.slice(0, 6)}…{el.pubkey.slice(-4)}
+          </small>
         </div>
-      </Link>
-    </div>
+        <span className={Style.online} />
+      </a>
+    </Link>
   );
 };
 

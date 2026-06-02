@@ -1,144 +1,194 @@
-import React, { useEffect, useState, useContext } from "react";
-import Image from "next/image";
+import React, { useState, useContext } from "react";
 import Link from "next/link";
 
 //INTERNAL IMPORT
 import Style from "./NavBar.module.css";
 import { ChatAppContect } from "../../Context/ChatAppContext";
-import { Model, Error } from "../index";
+import { Model } from "../index";
 import images from "../../assets";
+
+const shorten = (addr) =>
+  addr ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : "";
 
 const NavBar = () => {
   const menuItems = [
-    {
-      menu: "",
-      link: "alluser",
-    },
-    {
-      menu: "CHAT",
-      link: "/",
-    },
-    {
-      menu: "CONTACT",
-      link: "/",
-    },
-    {
-      menu: "SETTING",
-      link: "/",
-    },
+    { menu: "Chat", link: "/" },
+    { menu: "Discover", link: "/alluser" },
+    { menu: "About", link: "/about" },
   ];
 
-  //USESTATE
-  const [active, setActive] = useState(2);
   const [open, setOpen] = useState(false);
   const [openModel, setOpenModel] = useState(false);
+  const [openProfile, setOpenProfile] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  const { account, userName, connectWallet, createAccount, error } =
-    useContext(ChatAppContect);
+  const {
+    account,
+    userName,
+    friendLists,
+    connectWallet,
+    disconnectWallet,
+    createAccount,
+  } = useContext(ChatAppContect);
+
+  const hasAccount = !!userName;
+
+  const handleAccountClick = () => {
+    if (hasAccount) setOpenProfile((v) => !v);
+    else setOpenModel(true);
+  };
+
+  const copyAddress = async () => {
+    try {
+      await navigator.clipboard.writeText(account);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch (e) {
+      /* clipboard may be unavailable */
+    }
+  };
+
+  const handleLogout = () => {
+    setOpenProfile(false);
+    disconnectWallet();
+  };
+
   return (
-    <div className={Style.NavBar}>
-      <div className={Style.NavBar_box}>
-        <div className={Style.NavBar_box_left}>
-          <Image src={images.logo} alt="logo" width={50} height={50}/>
-        </div>
-        <div className={Style.NavBar_box_right}>
-          {/* //DESKTOP */}
-          <div className={Style.NavBar_box_right_menu}>
-            {menuItems.map((el, i) => (
-              <div
-                onClick={() => setActive(i + 1)}
-                key={i + 1}
-                className={`${Style.NavBar_box_right_menu_items} ${
-                  active == i + 1 ? Style.active_btn : ""
-                }`}
-              >
-                <Link
-                  className={Style.NavBar_box_right_menu_items_link}
-                  href={el.link}
-                >
-                  {el.menu}
-                </Link>
-              </div>
-            ))}
-          </div>
+    <header className={Style.NavBar}>
+      <div className={Style.inner}>
+        {/* BRAND */}
+        <Link href="/">
+          <a className={Style.brand}>
+            <span className={Style.logoMark}>D</span>
+            <span className={Style.brandText}>
+              De<span className="gradient-text">TALK</span>
+            </span>
+          </a>
+        </Link>
 
-          {/* //MOBILE */}
-          {open && (
-            <div className={Style.mobile_menu}>
-              {menuItems.map((el, i) => (
-                <div
-                  onClick={() => setActive(i + 1)}
-                  key={i + 1}
-                  className={`${Style.mobile_menu_items} ${
-                    active == i + 1 ? Style.active_btn : ""
-                  }`}
-                >
-                  <Link className={Style.mobile_menu_items_link} href={el.link}>
-                    {el.menu}
-                  </Link>
-                </div>
-              ))}
+        {/* DESKTOP MENU */}
+        <nav className={Style.menu}>
+          {menuItems.map((el, i) => (
+            <Link key={i} href={el.link}>
+              <a className={Style.menuItem}>{el.menu}</a>
+            </Link>
+          ))}
+        </nav>
 
-              <p className={Style.mobile_menu_btn}>
-                <Image
-                  src={images.close}
-                  alt="close"
-                  width={50}
-                  height={50}
-                  onClick={() => setOpen(false)}
-                />
-              </p>
+        {/* RIGHT SIDE */}
+        <div className={Style.right}>
+          {account === "" ? (
+            <button className={Style.connectBtn} onClick={connectWallet}>
+              <span className={Style.dot} />
+              Connect Wallet
+            </button>
+          ) : (
+            <div className={Style.accountWrap}>
+              <button className={Style.accountBtn} onClick={handleAccountClick}>
+                <span className={Style.avatar}>
+                  {(userName || "?").charAt(0).toUpperCase()}
+                </span>
+                <span className={Style.accountMeta}>
+                  <span className={Style.accountName}>
+                    {userName || "Create Account"}
+                  </span>
+                  <span className={Style.accountAddr}>{shorten(account)}</span>
+                </span>
+              </button>
+
+              {/* PROFILE DROPDOWN */}
+              {hasAccount && openProfile && (
+                <>
+                  <div
+                    className={Style.profileBackdrop}
+                    onClick={() => setOpenProfile(false)}
+                  />
+                  <div className={Style.profile}>
+                    <div className={Style.profileHeader}>
+                      <span className={Style.profileAvatar}>
+                        {userName.charAt(0).toUpperCase()}
+                      </span>
+                      <div className={Style.profileName}>
+                        <strong>{userName}</strong>
+                        <span>Web3 identity</span>
+                      </div>
+                    </div>
+
+                    <div className={Style.profileRow}>
+                      <span className={Style.profileLabel}>Wallet ID</span>
+                      <button
+                        className={Style.copyBtn}
+                        onClick={copyAddress}
+                        title="Copy address"
+                      >
+                        <span className={Style.profileAddr}>
+                          {shorten(account)}
+                        </span>
+                        <span className={Style.copyHint}>
+                          {copied ? "Copied!" : "Copy"}
+                        </span>
+                      </button>
+                    </div>
+
+                    <div className={Style.profileRow}>
+                      <span className={Style.profileLabel}>Friends</span>
+                      <span className={Style.friendCount}>
+                        {friendLists?.length || 0}
+                      </span>
+                    </div>
+
+                    <button
+                      className={Style.logoutBtn}
+                      onClick={handleLogout}
+                    >
+                      Log out
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
-          {/* CONNECT WALLET */}
-          <div className={Style.NavBar_box_right_connect}>
-            {account == "" ? (
-              <button onClick={() => connectWallet()}>
-                {""}
-                <span>Connect Wallet</span>
-              </button>
-            ) : (
-              <button onClick={() => setOpenModel(true)}>
-                {""}
-                <Image
-                  src={userName ? images.accountName : images.create2}
-                  alt="Account image"
-                  width={20}
-                  height={20}
-                />
-                {""}
-                <small>{userName || "Create Account"}</small>
-              </button>
-            )}
-          </div>
-
-          <div
-            className={Style.NavBar_box_right_open}
-            onClick={() => setOpen(true)}
+          {/* MOBILE TOGGLE */}
+          <button
+            className={Style.burger}
+            onClick={() => setOpen((v) => !v)}
+            aria-label="Menu"
           >
-            <Image src={images.open} alt="open" width={30} height={30} />
-          </div>
+            <span />
+            <span />
+            <span />
+          </button>
         </div>
       </div>
 
-      {/* MODEL COMPONENT */}
-      {openModel && (
-        <div className={Style.modelBox}>
-          <Model
-            openBox={setOpenModel}
-            title="WELCOME TO"
-            head="DeTALK"
-            info="DeTalk is a decentralized application based on web3 which works on blockchain network to facilitate a decentralized chat with decentralized identity through MetaMask"
-            smallInfo=""
-            image={images.hero}
-            functionName={createAccount}
-            address={account}
-          />
+      {/* MOBILE MENU */}
+      {open && (
+        <div className={Style.mobileMenu}>
+          {menuItems.map((el, i) => (
+            <Link key={i} href={el.link}>
+              <a className={Style.mobileItem} onClick={() => setOpen(false)}>
+                {el.menu}
+              </a>
+            </Link>
+          ))}
         </div>
       )}
-      {error == "" ? "" : <Error error={error} />}
-    </div>
+
+      {/* CREATE ACCOUNT MODAL */}
+      {openModel && (
+        <Model
+          openBox={setOpenModel}
+          title="Welcome to"
+          head="DeTALK"
+          info="A decentralized chat that lives on-chain. Pick a username to create your web3 identity — secured by your wallet, owned by you."
+          image={images.hero}
+          functionName={createAccount}
+          address={account}
+          singleField={!hasAccount}
+        />
+      )}
+    </header>
   );
 };
 

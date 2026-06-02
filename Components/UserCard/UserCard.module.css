@@ -1,35 +1,83 @@
-.UserCard{
-    background-color: rgba(0,0,0, 0.25);
-    border-radius: .5rem;
-    text-align: center;
-    padding: 1rem;
-    position: relative;
+.UserCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  padding: 24px 20px 22px;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(18px);
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  animation: riseIn 0.3s ease both;
+}
+.UserCard:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow);
 }
 
-.UserCard_box_img{
-    border-radius: 50%;
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  position: relative;
+  margin-bottom: 4px;
+}
+.avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--grad);
+  box-shadow: var(--shadow-glow);
+}
+.index {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-faint);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  padding: 3px 8px;
+  border-radius: 999px;
 }
 
-.UserCard_box_info{
-    line-height: .6;
+.name {
+  margin: 6px 0 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+.addr {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-faint);
+  font-family: "Space Grotesk", monospace;
 }
 
-.UserCard_box_info button{
-    background-color: rgba(0,0,0, 0.25);
-    color: #F18303;
-    width: 50%;
-    padding: 1rem;
-    border: none;
-    border-radius: .5rem;
-    font-size: 1rem;
-    cursor: pointer;
+.addBtn {
+  margin-top: 14px;
+  width: 100%;
+  padding: 11px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: #fff;
+  background: var(--grad);
+  box-shadow: var(--shadow-glow);
+  transition: transform 0.18s, filter 0.18s;
 }
-
-.number{
-    position: absolute;
-    right: 1rem;
-    padding: 1rem 1.3rem;
-    border-radius: 50%;
-    background-color: #F18303;
-    top: 1rem;
+.addBtn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
 }

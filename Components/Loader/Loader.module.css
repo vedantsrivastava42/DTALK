@@ -1,5 +1,15 @@
+.Loader {
+  display: grid;
+  place-items: center;
+  padding: 4px;
+}
 
-.Loader_box{
-    text-align: center;
-    margin: 1rem 0;
+.spinner {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.12);
+  border-top-color: var(--accent);
+  border-right-color: var(--accent-2);
+  animation: spin 0.7s linear infinite;
 }

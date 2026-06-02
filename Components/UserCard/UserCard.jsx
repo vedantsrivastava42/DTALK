@@ -1,35 +1,31 @@
 import React from "react";
-import Image from "next/image";
 
 //INTERNAL IMPORT
 import Style from "./UserCard.module.css";
-import images from "../../assets";
+
 const UserCard = ({ el, i, addFriends }) => {
   return (
     <div className={Style.UserCard}>
-      <div className={Style.UserCard_box}>
-        <Image
-          className={Style.UserCard_box_img}
-          src={images[`image${i + 1}`]}
-          alt="user"
-          width={100}
-          height={100}
-        />
-
-        <div className={Style.UserCard_box_info}>
-          <h3>{el.name}</h3>
-          <p>{el.accountAddress.slice(0, 25)}..</p>
-          <button
-            onClick={() =>
-              addFriends({ name: el.name, userAddress: el.accountAddress })
-            }
-          >
-            Add Friend
-          </button>
-        </div>
+      <div className={Style.top}>
+        <span className={Style.avatar}>
+          {(el.name || "?").charAt(0).toUpperCase()}
+        </span>
+        <span className={Style.index}>#{i + 1}</span>
       </div>
 
-      <small className={Style.number}>{i + 1}</small>
+      <h3 className={Style.name}>{el.name}</h3>
+      <p className={Style.addr}>
+        {el.accountAddress.slice(0, 10)}…{el.accountAddress.slice(-8)}
+      </p>
+
+      <button
+        className={Style.addBtn}
+        onClick={() =>
+          addFriends({ name: el.name, userAddress: el.accountAddress })
+        }
+      >
+        + Add Friend
+      </button>
     </div>
   );
 };

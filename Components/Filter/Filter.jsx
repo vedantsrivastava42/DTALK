@@ -1,5 +1,4 @@
 import React, { useState, useContext } from "react";
-import Image from "next/image";
 
 //INTERNAL IMPORT
 import Style from "./Filter.module.css";
@@ -8,44 +7,62 @@ import { ChatAppContect } from "../../Context/ChatAppContext";
 import { Model } from "../index";
 
 const Filter = () => {
-  const { account, addFriends } = useContext(ChatAppContect);
+  const { addFriends, searchTerm, setSearchTerm } =
+    useContext(ChatAppContect);
 
-  //USESTATE
   const [addFriend, setAddFriend] = useState(false);
+
   return (
     <div className={Style.Filter}>
-      <div className={Style.Filter_box}>
-        <div className={Style.Filter_box_left}>
-          <div className={Style.Filter_box_left_search}>
-            <Image src={images.search} alt="image" width={20} height={20} />
-            <input type="text" placeholder="search.." />
-          </div>
-        </div>
-        <div className={Style.Filter_box_right}>
-          <button>
-            <Image src={images.clear} alt="clear" width={20} height={20} />
-            CLEAR CHAT
+      <div className={Style.search}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+          <path
+            d="M20 20l-3-3"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+        </svg>
+        <input
+          type="text"
+          placeholder="Search friends…"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        {searchTerm && (
+          <button
+            className={Style.clearInput}
+            onClick={() => setSearchTerm("")}
+            aria-label="Clear search"
+          >
+            ✕
           </button>
-          <button onClick={() => setAddFriend(true)}>
-            <Image src={images.user} alt="clear" width={20} height={20} />
-            ADD FRIEND
-          </button>
-        </div>
+        )}
       </div>
 
-      {/* //MODEL COMPONENT */}
-      {addFriend && (
-        <div className={Style.Filter_model}>
-          <Model
-            openBox={setAddFriend}
-            title="WELCOME TO"
-            head="DeTalk"
-            info="DeTalk is a decentralized application based on web3 which works on blockchain network to facilitate a decentralized chat with decentralized identity through MetaMask"
-            smallInfo=""
-            image={images.hero}
-            functionName={addFriends}
+      <button className={Style.addBtn} onClick={() => setAddFriend(true)}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M12 5v14M5 12h14"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
           />
-        </div>
+        </svg>
+        Add Friend
+      </button>
+
+      {addFriend && (
+        <Model
+          openBox={setAddFriend}
+          title="Add a"
+          head="Friend"
+          info="Enter your friend's username and wallet address to start a private, on-chain conversation."
+          image={images.hero}
+          functionName={addFriends}
+          singleField={false}
+        />
       )}
     </div>
   );

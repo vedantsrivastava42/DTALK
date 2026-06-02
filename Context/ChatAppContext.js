@@ -1,166 +1,289 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 
 //INTERNAL IMPORT
 import {
-  ChechIfWalletConnected,
+  CheckIfWalletConnected,
   connectWallet,
   connectingWithContract,
+  disconnectWallet,
 } from "../Utils/apiFeature";
 
 export const ChatAppContect = React.createContext();
 
+/* Turn a raw web3/ethers error into something a human can read */
+const parseError = (err, fallback) => {
+  const raw =
+    err?.reason ||
+    err?.data?.message ||
+    err?.error?.message ||
+    err?.message ||
+    "";
+
+  if (raw === "NO_WALLET" || /no_wallet/i.test(raw))
+    return "MetaMask not found. Please install it to continue.";
+  if (/user rejected|user denied|action_rejected|4001/i.test(raw))
+    return "You rejected the request in your wallet.";
+  if (/insufficient funds/i.test(raw))
+    return "Insufficient funds to cover gas fees.";
+  if (/already exist|user already|exists/i.test(raw))
+    return "This account already exists.";
+  if (/network|chain|underlying network/i.test(raw))
+    return "Wrong network. Please switch to Polygon Amoy.";
+  return fallback;
+};
+
 export const ChatAppProvider = ({ children }) => {
-  //USESTATE
+  //CORE STATE
   const [account, setAccount] = useState("");
   const [userName, setUserName] = useState("");
   const [friendLists, setFriendLists] = useState([]);
   const [friendMsg, setFriendMsg] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [userLists, setUserLists] = useState([]);
-  const [error, setError] = useState("");
 
-  //CHAT USER DATA
+  //UI STATE
+  const [loading, setLoading] = useState(false); // tx in flight
+  const [dataLoading, setDataLoading] = useState(true); // initial fetch
+  const [searchTerm, setSearchTerm] = useState("");
+  const [notifications, setNotifications] = useState([]);
+
+  //ACTIVE CHAT
   const [currentUserName, setCurrentUserName] = useState("");
   const [currentUserAddress, setCurrentUserAddress] = useState("");
 
   const router = useRouter();
+  const idRef = useRef(0);
 
-  //FETCH DATA TIME OF PAGE LOAD
-  const fetchData = async () => {
-    try {
-      const address = await ChechIfWalletConnected();
-      if (address) {
-        //GET CONTRACT
-        const contract = await connectingWithContract();
-        //GET ACCOUNT
-        const connectAccount = await connectWallet();
-        setAccount(connectAccount);
-        //GET USER NAME
-        const userName = await contract.getUsername(connectAccount);
-        setUserName(userName);
-        //GET MY FRIEND LIST
-        const friendLists = await contract.getMyFriendList();
-        setFriendLists(friendLists);
-
-        //GET ALL APP USER LIST
-        const userList = await contract.getAllAppUser();
-        const newArray = userList.filter(
-          (user) => user.accountAddress.toLowerCase() !== address
-        );
-
-        const filterArray = filterUsersExcludingFriends(newArray, friendLists);
-        console.log(filterArray);
-        setUserLists(filterArray);
-      }
-    } catch (error) {
-      // setError("Please Install And Connect Your Wallet");
-      console.log(error);
-    }
-  };
-
-  function filterUsersExcludingFriends(newArray, friendLists) {
-    const friendAddresses = new Set(friendLists.map((friend) => friend.pubkey));
-
-    return newArray.filter((user) => !friendAddresses.has(user.accountAddress));
-  }
-  useEffect(() => {
-    fetchData();
+  /* ----------------------------- NOTIFICATIONS ----------------------------- */
+  const removeNotification = useCallback((id) => {
+    setNotifications((list) => list.filter((n) => n.id !== id));
   }, []);
 
-  //READ MESSAGE
-  const readMessage = async (friendAddress) => {
+  const notify = useCallback(
+    (type, message, title) => {
+      const id = ++idRef.current;
+      setNotifications((list) => [...list, { id, type, message, title }]);
+      setTimeout(() => removeNotification(id), 5000);
+      return id;
+    },
+    [removeNotification]
+  );
+
+  /* ------------------------------- DATA FETCH ------------------------------ */
+  const filterUsersExcludingFriends = (allUsers, friends) => {
+    const friendAddresses = new Set(friends.map((f) => f.pubkey?.toLowerCase()));
+    return allUsers.filter(
+      (u) => !friendAddresses.has(u.accountAddress?.toLowerCase())
+    );
+  };
+
+  const fetchData = useCallback(async () => {
     try {
-      const address = await ChechIfWalletConnected();
-      if (address) {
-        const contract = await connectingWithContract();
-        const read = await contract.readMessage(friendAddress);
-        setFriendMsg(read);
+      const address = await CheckIfWalletConnected();
+      if (!address) {
+        setDataLoading(false);
+        return;
       }
-    } catch (error) {
-      console.log("Currently You Have no Message");
-    }
-  };
-
-  //CREATE ACCOUNT
-  const createAccount = async ({ name }) => {
-    console.log(name, account);
-    try {
-      if (!name || !account)
-        return setError("Name And Account Address, cannot be empty");
 
       const contract = await connectingWithContract();
-      console.log(contract);
-      const getCreatedUser = await contract.createAccount(name);
+      setAccount(address);
 
-      setLoading(true);
-      await getCreatedUser.wait();
-      setLoading(false);
-      window.location.reload();
+      const name = await contract.getUsername(address);
+      setUserName(name);
+
+      const friends = await contract.getMyFriendList();
+      setFriendLists(friends);
+
+      const allUsers = await contract.getAllAppUser();
+      const others = allUsers.filter(
+        (u) => u.accountAddress.toLowerCase() !== address.toLowerCase()
+      );
+      setUserLists(filterUsersExcludingFriends(others, friends));
     } catch (error) {
-      setError("Error while creating your account Pleas reload browser");
+      // Silent on initial load — user simply may not be connected yet
+      console.log(error);
+    } finally {
+      setDataLoading(false);
     }
-  };
+  }, []);
 
-  //ADD YOUR FRIENDS
-  const addFriends = async ({ name, userAddress }) => {
-    console.log(name, userAddress);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  /* ------------------------ WALLET EVENT LISTENERS ------------------------- */
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.ethereum) return;
+
+    const handleAccountsChanged = (accounts) => {
+      if (!accounts.length) {
+        setAccount("");
+        setUserName("");
+        setFriendLists([]);
+        setUserLists([]);
+        notify("info", "Wallet disconnected.");
+      } else {
+        fetchData();
+        notify("info", "Account switched.");
+      }
+    };
+    const handleChainChanged = () => fetchData();
+
+    window.ethereum.on("accountsChanged", handleAccountsChanged);
+    window.ethereum.on("chainChanged", handleChainChanged);
+    return () => {
+      window.ethereum?.removeListener?.(
+        "accountsChanged",
+        handleAccountsChanged
+      );
+      window.ethereum?.removeListener?.("chainChanged", handleChainChanged);
+    };
+  }, [fetchData, notify]);
+
+  /* ------------------------------- ACTIONS --------------------------------- */
+  const handleConnectWallet = useCallback(async () => {
     try {
-      if (!name || !userAddress) return setError("Please provide data");
-      const contract = await connectingWithContract();
-      const addMyFriend = await contract.addFriend(userAddress, name);
-      setLoading(true);
-      await addMyFriend.wait();
-      setLoading(false);
-      router.push("/");
-      window.location.reload();
+      const connected = await connectWallet();
+      setAccount(connected);
+      await fetchData();
+      notify("success", "Wallet connected.");
     } catch (error) {
-      setError("Something went wrong while adding friends, try again");
+      notify("error", parseError(error, "Could not connect your wallet."));
     }
-  };
+  }, [fetchData, notify]);
 
-  //SEND MESSAGE TO YOUR FRIEND
-  const sendMessage = async ({ msg, address }) => {
+  const handleDisconnect = useCallback(() => {
+    disconnectWallet();
+    setAccount("");
+    setUserName("");
+    setFriendLists([]);
+    setFriendMsg([]);
+    setUserLists([]);
+    setCurrentUserName("");
+    setCurrentUserAddress("");
+    notify("info", "You've been logged out.");
+    router.push("/");
+  }, [notify, router]);
+
+  const readMessage = useCallback(async (friendAddress) => {
     try {
-      if (!msg || !address) return setError("Please Type your Message");
-
       const contract = await connectingWithContract();
-      const addMessage = await contract.sendMessage(address, msg);
-      setLoading(true);
-      await addMessage.wait();
-      setLoading(false);
-      window.location.reload();
+      const read = await contract.readMessage(friendAddress);
+      setFriendMsg(read);
     } catch (error) {
-      setError("Please reload and try again");
+      setFriendMsg([]);
+      console.log("No messages yet");
     }
-  };
+  }, []);
 
-  //READ INFO
-  const readUser = async (userAddress) => {
-    const contract = await connectingWithContract();
-    const userName = await contract.getUsername(userAddress);
-    setCurrentUserName(userName);
-    setCurrentUserAddress(userAddress);
-  };
+  const createAccount = useCallback(
+    async ({ name }) => {
+      try {
+        if (!name) return notify("warning", "Please enter a username.");
+        if (!account)
+          return notify("warning", "Connect your wallet first.");
+
+        const contract = await connectingWithContract();
+        setLoading(true);
+        const tx = await contract.createAccount(name);
+        await tx.wait();
+        setLoading(false);
+        notify("success", `Welcome, ${name}! Your account is ready.`);
+        await fetchData();
+        return true;
+      } catch (error) {
+        setLoading(false);
+        notify("error", parseError(error, "Could not create your account."));
+      }
+    },
+    [account, fetchData, notify]
+  );
+
+  const addFriends = useCallback(
+    async ({ name, userAddress }) => {
+      try {
+        if (!name || !userAddress)
+          return notify("warning", "Name and address are required.");
+        if (userAddress.toLowerCase() === account.toLowerCase())
+          return notify("warning", "You can't add yourself as a friend.");
+
+        const contract = await connectingWithContract();
+        setLoading(true);
+        const tx = await contract.addFriend(userAddress, name);
+        await tx.wait();
+        setLoading(false);
+        notify("success", `${name} was added to your friends.`);
+        await fetchData();
+        router.push("/");
+        return true;
+      } catch (error) {
+        setLoading(false);
+        notify("error", parseError(error, "Could not add this friend."));
+      }
+    },
+    [account, fetchData, notify, router]
+  );
+
+  const sendMessage = useCallback(
+    async ({ msg, address }) => {
+      try {
+        if (!msg?.trim()) return notify("warning", "Type a message first.");
+        if (!address) return notify("warning", "No conversation selected.");
+
+        const contract = await connectingWithContract();
+        setLoading(true);
+        const tx = await contract.sendMessage(address, msg);
+        await tx.wait();
+        setLoading(false);
+        await readMessage(address);
+        return true;
+      } catch (error) {
+        setLoading(false);
+        notify("error", parseError(error, "Message could not be sent."));
+      }
+    },
+    [notify, readMessage]
+  );
+
+  const readUser = useCallback(async (userAddress) => {
+    try {
+      const contract = await connectingWithContract();
+      const name = await contract.getUsername(userAddress);
+      setCurrentUserName(name);
+      setCurrentUserAddress(userAddress);
+    } catch (error) {
+      console.log(error);
+    }
+  }, []);
+
   return (
     <ChatAppContect.Provider
       value={{
+        // actions
         readMessage,
         createAccount,
         addFriends,
         sendMessage,
         readUser,
-        connectWallet,
-        ChechIfWalletConnected,
+        connectWallet: handleConnectWallet,
+        disconnectWallet: handleDisconnect,
+        CheckIfWalletConnected,
+        notify,
+        removeNotification,
+        // data
         account,
         userName,
         friendLists,
         friendMsg,
         userLists,
-        loading,
-        error,
         currentUserName,
         currentUserAddress,
+        // ui
+        loading,
+        dataLoading,
+        notifications,
+        searchTerm,
+        setSearchTerm,
       }}
     >
       {children}
