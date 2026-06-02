@@ -87,23 +87,37 @@ const networks = {
   },
 };
 
-const changeNetwork = async ({ networkName }) => {
+// The chain we force every transaction to run on.
+export const ACTIVE_NETWORK = "polygon_amoy";
+export const ACTIVE_CHAIN_ID = networks[ACTIVE_NETWORK].chainId; // 0x13882 (80002)
+
+/* Actively SWITCH the wallet to the target network. `wallet_switchEthereumChain`
+   is what changes the active chain — `wallet_addEthereumChain` alone only adds it
+   to MetaMask and leaves you on whatever chain you were already on. */
+const switchOrAddNetwork = async (networkName) => {
+  if (!window.ethereum) throw new Error("NO_WALLET");
+  const target = networks[networkName];
+
   try {
-    if (!window.ethereum) throw new Error("No crypto wallet found");
     await window.ethereum.request({
-      method: "wallet_addEthereumChain",
-      params: [
-        {
-          ...networks[networkName],
-        },
-      ],
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: target.chainId }],
     });
   } catch (err) {
-    console.log(err.message);
+    // 4902 = the chain isn't in MetaMask yet → add it (adding also switches to it)
+    const code = err?.code ?? err?.data?.originalError?.code;
+    if (code === 4902) {
+      await window.ethereum.request({
+        method: "wallet_addEthereumChain",
+        params: [target],
+      });
+    } else {
+      // e.g. 4001 = user rejected the switch — bubble up so the UI can warn
+      throw err;
+    }
   }
 };
 
 export const handleNetworkSwitch = async () => {
-  const networkName = "polygon_amoy";
-  await changeNetwork({ networkName });
+  await switchOrAddNetwork(ACTIVE_NETWORK);
 };
