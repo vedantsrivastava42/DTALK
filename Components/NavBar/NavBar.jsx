@@ -180,7 +180,7 @@ const NavBar = () => {
         <Model
           openBox={setOpenModel}
           title="Welcome to"
-          head="DeTALK"
+          head="Synapse"
           info="A decentralized chat that lives on-chain. Pick a username to create your web3 identity — secured by your wallet, owned by you."
           image={images.hero}
           functionName={createAccount}

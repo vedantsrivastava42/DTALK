@@ -17,7 +17,7 @@ const AllUser = () => {
           Find your <span className="gradient-text">friends</span>
         </h1>
         <p className={Style.sub}>
-          Everyone on DeTALK you haven't added yet. Send a request to start a
+          Everyone on Synapse you haven't added yet. Send a request to start a
           private on-chain chat.
         </p>
       </header>

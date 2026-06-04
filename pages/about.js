@@ -23,7 +23,7 @@ const FEATURES = [
   {
     icon: "🧭",
     title: "Discover users",
-    text: "Browse everyone registered on DeTALK (excluding yourself and existing friends) and send a friend request.",
+    text: "Browse everyone registered on Synapse (excluding yourself and existing friends) and send a friend request.",
   },
   {
     icon: "⚡",
@@ -41,7 +41,7 @@ const STEPS = [
   {
     n: "01",
     title: "Connect your wallet",
-    text: "Click “Connect Wallet” in the navbar. DeTALK requests your MetaMask account and switches you to the Polygon Amoy network.",
+    text: "Click “Connect Wallet” in the navbar. Synapse requests your MetaMask account and switches you to the Polygon Amoy network.",
   },
   {
     n: "02",
@@ -78,10 +78,10 @@ const About = () => {
       <header className={Style.hero}>
         <span className={Style.tag}>About the project</span>
         <h1 className={Style.title}>
-          What is <span className="gradient-text">DeTALK</span>?
+          What is <span className="gradient-text">Synapse</span>?
         </h1>
         <p className={Style.lead}>
-          DeTALK is a fully decentralized chat application built on Web3. Instead
+          Synapse is a fully decentralized chat application built on Web3. Instead
           of relying on a company's servers, it runs on a blockchain smart
           contract — your identity, your friends, and every message you send are
           owned by you and secured by your crypto wallet.
@@ -142,7 +142,7 @@ const About = () => {
       <section className={Style.note}>
         <h3>⚠️ A note on requirements</h3>
         <p>
-          DeTALK is a Web3 app. To send and read messages you need the MetaMask
+          Synapse is a Web3 app. To send and read messages you need the MetaMask
           browser extension installed and connected to the{" "}
           <strong>Polygon Amoy</strong> testnet. Transactions require a small
           amount of test MATIC for gas. Without a connected wallet you can browse
@@ -151,7 +151,7 @@ const About = () => {
       </section>
 
       <footer className={Style.footer}>
-        Built on the blockchain · Owned by you · © DeTALK
+        Built on the blockchain · Owned by you · © Synapse
       </footer>
     </div>
   );

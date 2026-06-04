@@ -1,6 +1,6 @@
-# DeTALK — Decentralized Chat dApp
+# Synapse — Decentralized Chat dApp
 
-DeTALK is a fully decentralized chat application built on Web3. Your identity,
+Synapse is a fully decentralized chat application built on Web3. Your identity,
 friends, and messages live on a blockchain smart contract instead of a central
 server — secured by your crypto wallet and owned by you.
 
